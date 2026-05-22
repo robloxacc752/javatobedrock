@@ -1,651 +1,249 @@
-# 📚 HƯỚNG DẪN SỬ DỤNG MINECRAFT RESOURCE PACK CONVERTER
+# HƯỚNG DẪN SỬ DỤNG CHI TIẾT – Python Converter v2.3.0
 
-**Phiên bản:** 1.0.0  
-**Tác giả:** LeHoangNam @ HorseKingdom Studio  
-**Mục đích:** Chuyển đổi Resource Pack từ Minecraft Java sang Bedrock Edition với tối ưu cho GeyserMC
+**Mục đích:** Chuyển đổi Java Resource Pack sang Bedrock Edition, hỗ trợ ItemsAdder (contents + storage), tự động kiểm tra và sửa lỗi pack.
 
 ---
 
-## 📋 MỤC LỤC
+## 1. CÀI ĐẶT
 
-1. [Yêu cầu & Chuẩn bị](#yêu-cầu--chuẩn-bị)
-2. [Cách cài đặt](#cách-cài-đặt)
-3. [Cách sử dụng](#cách-sử-dụng)
-4. [Giải thích chi tiết](#giải-thích-chi-tiết)
-5. [Cấu trúc tệp tạo ra](#cấu-trúc-tệp-tạo-ra)
-6. [Xử lý sự cố](#xử-lý-sự-cố)
+### 1.1. Cài Python
 
----
+- Tải Python 3.8+ từ [python.org](https://python.org)
+- **Quan trọng:** Trong quá trình cài, chọn **"Add Python to PATH"**
 
-## ✅ Yêu cầu & Chuẩn bị
+### 1.2. Cài thư viện
 
-### Yêu cầu Hệ Thống
-- **Python:** 3.8 trở lên
-- **OS:** Windows, macOS, hoặc Linux
-- **Dung lượng đĩa:** Tối thiểu 2-3 lần kích thước Java Resource Pack
+Mở **Command Prompt** hoặc **PowerShell** và chạy:
 
-### Thư viện Python
 ```bash
-# Thư viện chuẩn (không cần cài thêm):
-- os, json, shutil, uuid, pathlib, re, sys, datetime
-
-# Thư viện tùy chọn (nếu cần xử lý ảnh):
-pip install Pillow
+python -m pip install pyyaml pillow
 ```
 
-### Chuẩn bị Java Resource Pack
-Đảm bảo Java Resource Pack của bạn có cấu trúc tiêu chuẩn:
+Hoặc:
+
+```bash
+pip install pyyaml pillow
 ```
-my_resource_pack/
-├── assets/
-│   └── minecraft/
-│       ├── models/
-│       │   └── item/
-│       ├── textures/
-│       │   ├── items/
-│       │   ├── models/armor/
-│       │   └── font/
-│       └── sounds/
+
+### 1.3. Kiểm tra cài đặt
+
+```bash
+python -c "import yaml, PIL; print('✅ Thành công')"
+```
+
+Nếu không có lỗi, bạn đã sẵn sàng.
+
+---
+
+## 2. CHUẨN BỊ DỮ LIỆU
+
+### 2.1. Java Resource Pack thông thường
+
+Thư mục pack cần có cấu trúc tối thiểu:
+
+```
+MyPack/
 ├── pack.mcmeta
-└── pack.png
+├── pack.png              (không bắt buộc)
+└── assets/
+    └── minecraft/
+        ├── models/item/          # file .json (overrides)
+        ├── textures/item/        # texture .png
+        ├── textures/models/armor/ # armor layer
+        └── sounds.json           # nếu có
 ```
+
+### 2.2. Tích hợp ItemsAdder (nếu dùng)
+
+Bạn cần có thư mục `contents` của ItemsAdder (thường nằm trong `plugins/ItemsAdder/contents`). Cấu trúc bên trong:
+
+```
+contents/
+└── ten_namespace/                # ví dụ: "my_items"
+    ├── configs/                  # file .yml (items, blocks, fonts, cosmetics)
+    │   ├── items.yml
+    │   ├── blocks.yml
+    │   └── fonts.yml
+    └── resourcepack/
+        └── assets/
+            └── ten_namespace/    # cùng tên namespace
+                ├── textures/items/
+                ├── textures/blocks/
+                ├── textures/font/
+                └── models/
+```
+
+> **Lưu ý:** Nếu có thư mục `storage` (chứa font images bổ sung), bạn cũng có thể cung cấp đường dẫn.
 
 ---
 
-## 🔧 Cách cài đặt
+## 3. CHẠY CONVERTER
 
-### Windows
+### 3.1. Chế độ tương tác (khuyến nghị)
+
 ```bash
-# 1. Mở PowerShell hoặc Command Prompt
-# 2. Tải script:
-#    (sao chép file minecraft_resourcepack_converter.py)
-
-# 3. Kiểm tra Python
-python --version
-
-# 4. (Tuỳ chọn) Cài Pillow để xử lý ảnh
-pip install Pillow
+python converter.py
 ```
 
-### macOS / Linux
-```bash
-# 1. Mở Terminal
-# 2. Tải script
-# 3. Kiểm tra Python
-python3 --version
+Lần lượt nhập:
 
-# 4. (Tuỳ chọn) Cài Pillow
-pip install Pillow
+1. **Đường dẫn Java Resource Pack**
+   Ví dụ: `C:\Users\Admin\Desktop\MyPack` hoặc `./MyPack`
+
+2. **Đường dẫn output**
+   Mặc định: `./bedrock_packs_v2` – nơi tạo thư mục pack Bedrock.
+
+3. **Tên pack**
+   Không dấu cách, ví dụ: `my_awesome_pack`
+
+4. **Đường dẫn đến thư mục `contents` của ItemsAdder**
+   - Nếu có: nhập đường dẫn tuyệt đối (ví dụ `C:\server\plugins\ItemsAdder\contents`). Script sẽ kiểm tra cấu trúc và yêu cầu nhập lại nếu sai.
+   - Nếu không: nhấn **Enter** để bỏ qua.
+
+5. **Đường dẫn đến thư mục `storage`** (tùy chọn)
+   Nhập hoặc để trống.
+
+Sau đó, bạn sẽ được hỏi các tùy chọn nâng cao (mapping V3/V4, animation, cosmetics, log chi tiết). Trả lời bằng số hoặc `Y/N`.
+
+### 3.2. Chế độ dòng lệnh (batch)
+
+```bash
+python converter.py "D:\MyPack" "./bedrock_output" "pack_name"
 ```
+
+Ba tham số đầu tiên, các tham số còn lại (`contents`, `storage`) sẽ không được hỏi – bạn phải sửa trực tiếp trong script hoặc dùng chế độ tương tác.
 
 ---
 
-## 🚀 Cách sử dụng
+## 4. GIẢI THÍCH CÁC TÙY CHỌN
 
-### Phương pháp 1: Interactive Mode (Dễ dùng nhất)
-```bash
-# Windows:
-python minecraft_resourcepack_converter.py
+| Tùy chọn | Giá trị | Ý nghĩa |
+|---|---|---|
+| GeyserMC Mappings | V3 / V4 | V3 ổn định; V4 thử nghiệm, hỗ trợ components, NBT. |
+| Animation frames | Y / N | Bật/tạo `flipbook_textures.json` từ file `.png.mcmeta`. |
+| Cosmetics | Y / N | Chuyển mũ, wings, particle từ ItemsAdder sang attachables. |
+| Log chi tiết | Y / N | In thông tin từng file, mỗi bước nhỏ. |
 
-# macOS / Linux:
-python3 minecraft_resourcepack_converter.py
+---
 
-# Sau đó nhập:
-# 📁 Nhập đường dẫn Java Resource Pack: C:\Users\...\Downloads\MyPack
-# 📁 Nhập đường dẫn output: ./bedrock_packs
-# 📝 Nhập tên pack: my_awesome_pack
+## 5. KẾT QUẢ ĐẦU RA
+
+Sau khi chạy thành công, thư mục output sẽ có cấu trúc:
+
 ```
-
-### Phương pháp 2: Command Line Arguments
-```bash
-python3 minecraft_resourcepack_converter.py \
-  /path/to/java/pack \
-  ./bedrock_packs \
-  my_converted_pack
-```
-
-### Phương pháp 3: Import vào Script Python khác
-```python
-from minecraft_resourcepack_converter import main
-
-# Gọi hàm main
-main(
-    java_pack_path="./my_java_pack",
-    output_base_path="./bedrock_packs",
-    pack_name="converted_pack"
-)
-```
-
-### Kết quả sau chạy
-Script sẽ tạo:
-```
-bedrock_packs/
-└── my_converted_pack/
-    ├── manifest.json              ← Metadata pack
-    ├── custom_mappings.json       ← Mappings GeyserMC (QUAN TRỌNG!)
-    ├── sound_definitions.json     ← Định nghĩa âm thanh
-    ├── CONVERSION_REPORT.txt      ← Báo cáo chi tiết
-    ├── attachables/               ← Armor definitions
-    │   └── [armor_name].json
+bedrock_packs_v2/
+└── my_awesome_pack/
+    ├── manifest.json              # Bedrock pack metadata
+    ├── custom_mappings.json       # GeyserMC mappings (V3 hoặc V4)
+    ├── blocks.json                # Định nghĩa block custom
+    ├── sound_definitions.json     # Âm thanh
+    ├── attachables/               # File .json cho armor, weapons, cosmetics
     ├── textures/
-    │   ├── items/                 ← Item textures
-    │   ├── models/armor/          ← Armor textures
-    │   └── font/                  ← Font/emoji
-    ├── models/                    ← 3D models
-    ├── sounds/                    ← Sound files
-    └── font/
-        └── default.json           ← Font config
+    │   ├── items/                 # Textures item
+    │   ├── blocks/                # Textures block
+    │   └── font/                  # Font/emoji PNG
+    ├── sounds/                    # Các file .ogg
+    ├── font/                      # Định nghĩa font Bedrock
+    └── CONVERSION_REPORT.txt      # Báo cáo tóm tắt
 ```
 
 ---
 
-## 📖 Giải thích chi tiết
+## 6. KIỂM TRA VÀ SỬA LỖI TỰ ĐỘNG
 
-### 1️⃣ Items & Custom Model Data (CMD)
+Trong quá trình chạy, `PackValidator` sẽ tự động:
 
-#### Vấn đề
-Java Edition dùng cơ chế "Predicate" để tạo multiple models cho một item:
+- Tạo thư mục `assets/minecraft` nếu thiếu.
+- Tạo `pack.mcmeta` mặc định với `pack_format: 15` (phù hợp Java 1.21).
+- Sửa đường dẫn texture trong các file `.json` – thêm đuôi `.png` nếu quên.
+- Xóa các thư mục rỗng.
+- Phát hiện file JSON lỗi cú pháp → tạo bản sao `.bak` và báo lỗi.
 
-**Java JSON Model:**
-```json
-{
-  "overrides": [
-    {
-      "predicate": {"custom_model_data": 1},
-      "model": "item/custom/sword_variant_1"
-    },
-    {
-      "predicate": {"custom_model_data": 2},
-      "model": "item/custom/sword_variant_2"
-    }
-  ]
-}
-```
-
-Bedrock Edition **KHÔNG** hỗ trợ predicate này.
-
-#### Giải pháp
-- Script quét các file JSON để tìm tất cả `custom_model_data` IDs
-- Tạo "virtual items" trong Bedrock (được quản lý bởi GeyserMC)
-- Tạo file `custom_mappings.json`:
-
-```json
-{
-  "java_cmd": {
-    "diamond_sword_1": {
-      "java_item": "minecraft:diamond_sword",
-      "custom_model_data": 1,
-      "bedrock_virtual_id": "item.geyser.diamond_sword_1"
-    }
-  }
-}
-```
-
-**Cách hoạt động:**
-1. Player Java nhận item với `CustomModelData:1` từ server
-2. GeyserMC đọc `custom_mappings.json`, tìm mapping
-3. GeyserMC gửi Bedrock client virtual item ID
-4. Bedrock render item với texture từ resource pack
+Tất cả các thay đổi đều được ghi lại trong log.
 
 ---
 
-### 2️⃣ Custom Armor & Attachables
+## 7. TRIỂN KHAI LÊN GEYSERMC
 
-#### Vấn đề
-Java dùng Entity Model định sẵn để render armor:
-```
-assets/minecraft/textures/models/armor/
-├── diamond_layer_1.png    ← Lớp ngoài
-└── diamond_layer_2.png    ← Lớp trong
-```
+1. Copy toàn bộ thư mục pack (ví dụ `my_awesome_pack`) vào thư mục `plugins/Geyser-Spigot/packs/` trên máy chủ Minecraft.
 
-Bedrock hoàn toàn khác:
-- Không có Entity Model cố định
-- Dùng **Attachables** - hệ thống gắn object lên player
-
-#### Giải pháp
-1. **Copy textures:** `diamond_layer_1.png` → Bedrock `textures/models/armor/`
-2. **Tạo attachable JSON:**
-   ```json
-   {
-     "format_version": "1.10.0",
-     "attachable": {
-       "description": {
-         "identifier": "geometry.armor.custom_diamond",
-         "materials": {"default": "armor"},
-         "textures": {"default": "textures/models/armor/diamond_layer_1"},
-         "geometry": {"default": "geometry.armor.diamond"}
-       }
-     }
-   }
+2. Reload Geyser bằng lệnh trong console server:
+   ```
+   /geyser reload
    ```
 
-3. **Thêm vào custom_mappings.json:**
-   ```json
-   {
-     "custom_armor": {
-       "diamond": {
-         "java_item_prefix": "minecraft:diamond",
-         "bedrock_armor_id": "armor.custom_diamond",
-         "attachable_file": "attachables/diamond.json"
-       }
-     }
-   }
-   ```
+3. Kết nối từ Bedrock client (phone, PC Windows 10/11, console). Pack sẽ tự động tải về lần đầu kết nối.
 
-**Cách hoạt động:**
-1. Player Java mặc diamond helmet
-2. GeyserMC detect armor type từ `custom_mappings.json`
-3. Load attachable JSON từ Bedrock pack
-4. Render attachable lên Bedrock player model
+4. Kiểm tra log Geyser để chắc chắn không có lỗi:
+   ```
+   [Geyser] Loading custom resource pack: my_awesome_pack
+   [Geyser] Loaded 45 custom mappings.
+   ```
 
 ---
 
-### 3️⃣ Fonts & Emojis
+## 8. XỬ LÝ SỰ CỐ
 
-#### Vấn đề
-Java Font System:
-- Dùng Unicode Font PNG files
-- Mã Unicode trực tiếp → pixel trên texture
+### `pip` không được nhận diện
 
-Bedrock Font System:
-- Dùng Font Definition JSON
-- Cần định nghĩa glyph coordinates (x, y, width, height)
+**Nguyên nhân:** Python chưa được thêm vào PATH.
 
-#### Giải pháp
-1. **Copy font PNG:** `assets/.../font/*.png` → Bedrock `textures/font/`
-2. **Tạo font/default.json:**
-   ```json
-   {
-     "default": {
-       "font": "textures/font/default.png",
-       "glyphs": [
-         {
-           "chars": "ABC...",
-           "ascent": 8,
-           "height": 10,
-           "glyphs": [
-             {"char": "A", "x": 0, "y": 0, "w": 8, "h": 10}
-           ]
-         }
-       ]
-     }
-   }
-   ```
+**Khắc phục:** Dùng `python -m pip install ...` hoặc cài lại Python, chọn "Add to PATH".
 
-**Lưu ý:** Conversion chính xác cần phân tích PNG để tìm glyph bounds. Script tạo template cơ bản - có thể cần chỉnh sửa thủ công.
+### `KeyError: 'items'` hoặc `KeyError: 'blocks'`
 
----
+**Nguyên nhân:** Phiên bản script cũ (trước 2.3.0) không xử lý dict ItemsAdder đúng.
 
-### 4️⃣ Sounds & Music
+**Khắc phục:** Tải lại script phiên bản 2.3.0 từ repository.
 
-#### Vấn đề
-Java Format:
-```json
-{
-  "entity.player.hurt": {
-    "sounds": [
-      "damage/hit1",
-      "damage/hit2"
-    ],
-    "subtitle": "subtitles.player.hurt"
-  }
-}
-```
+### Không tìm thấy contents hợp lệ
 
-Bedrock Format:
-```json
-{
-  "entity.player.hurt": {
-    "sounds": [
-      {"name": "sounds/damage/hit1", "load_on_open": true},
-      {"name": "sounds/damage/hit2", "load_on_open": true}
-    ],
-    "category": "master",
-    "subtitle": "subtitles.player.hurt"
-  }
-}
-```
+**Nguyên nhân:** Đường dẫn đến `contents` không tồn tại hoặc thiếu thư mục `resourcepack/assets` bên trong namespace.
 
-#### Khác biệt chính
-1. **Category:** Bedrock cần xác định loại âm thanh (master, music, record, weather...)
-2. **Sound object:** Array của string → Array của object
-3. **Path format:** Relative paths phải bắt đầu từ `sounds/`
+**Khắc phục:** Kiểm tra lại đường dẫn. Ví dụ đúng: `C:\server\plugins\ItemsAdder\contents` – bên trong phải có thư mục con chứa `resourcepack`.
 
-#### Giải pháp
-- Script tự động detect category dựa trên tên event
-- Convert paths sang format Bedrock
-- Sao chép tất cả `.ogg` files
-- Tạo `sound_definitions.json`
+### Pack Bedrock không load trong Geyser
+
+**Nguyên nhân:** `manifest.json` lỗi (thiếu UUID, sai format), hoặc thư mục pack không được đặt đúng chỗ.
+
+**Khắc phục:** Xóa thư mục pack cũ trong `packs/`, chạy lại converter. Nếu vẫn lỗi, mở `manifest.json` kiểm tra cú pháp JSON.
+
+### Font bị lệch, icon không hiển thị
+
+**Nguyên nhân:** Không có cấu hình glyph chính xác (do thiếu file font config từ ItemsAdder hoặc Pillow không hoạt động).
+
+**Khắc phục:** Cài Pillow (`pip install pillow`) và chạy lại – script sẽ tự động quét glyph. Nếu vẫn lỗi, chỉnh sửa thủ công file `font/*.json` trong Bedrock pack.
+
+### Lỗi YAML khi parse ItemsAdder
+
+**Nguyên nhân:** File `.yml` trong `configs/` bị sai cú pháp (thiếu dấu cách, sai indent).
+
+**Khắc phục:** Mở file bằng editor hỗ trợ YAML (VS Code, Notepad++) và sửa lỗi.
 
 ---
 
-## 📁 Cấu trúc tệp tạo ra
+## 9. CÂU HỎI THƯỜNG GẶP
 
-### Bedrock Resource Pack Structure
-```
-bedrock_pack/
-├── manifest.json
-│   └─ Metadata pack (UUID, version, format)
-│
-├── custom_mappings.json ⭐ QUAN TRỌNG
-│   └─ Mappings Java → Bedrock cho GeyserMC
-│
-├── sound_definitions.json
-│   └─ Định nghĩa âm thanh Bedrock format
-│
-├── attachables/
-│   ├─ diamond.json
-│   ├─ netherite.json
-│   └─ ...
-│
-├── textures/
-│   ├─ items/
-│   │  ├─ diamond_sword.png
-│   │  ├─ custom_item.png
-│   │  └─ ...
-│   ├─ models/armor/
-│   │  ├─ diamond_layer_1.png
-│   │  ├─ diamond_layer_2.png
-│   │  └─ ...
-│   └─ font/
-│      ├─ default.png
-│      └─ emoji.png
-│
-├── sounds/
-│   ├─ damage/
-│   │  ├─ hit1.ogg
-│   │  └─ hit2.ogg
-│   ├─ ambient/
-│   │  └─ cave1.ogg
-│   └─ ...
-│
-├── models/
-│   └─ (custom models nếu có)
-│
-├── font/
-│   └─ default.json
-│
-└─ CONVERSION_REPORT.txt
-```
+**Hỏi: Tôi có cần ItemsAdder không?**
 
-### File Quan Trọng
+Không. Script vẫn hoạt động với Java pack thuần túy. ItemsAdder chỉ là tính năng bổ sung.
 
-#### manifest.json
-**Mục đích:** Bedrock metadata - bắt buộc phải có
-```json
-{
-  "format_version": 3,
-  "header": {
-    "name": "[Java→Bedrock] My Pack",
-    "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "version": [1, 0, 0]
-  },
-  "modules": [
-    {
-      "type": "resources",
-      "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-      "version": [1, 0, 0]
-    }
-  ]
-}
-```
+**Hỏi: Tại sao pack output lại có thư mục `font/` và `textures/font/`?**
 
-#### custom_mappings.json ⭐
-**Mục đích:** Mapping Java items → Bedrock cho GeyserMC
-```json
-{
-  "version": "1.0.0",
-  "description": "Custom Resource Pack Mappings for GeyserMC",
-  "mappings": {
-    "java_cmd": {
-      "diamond_sword_1": {
-        "java_item": "minecraft:diamond_sword",
-        "custom_model_data": 1,
-        "bedrock_virtual_id": "item.geyser.diamond_sword_1"
-      }
-    },
-    "custom_armor": {
-      "diamond": {
-        "java_item_prefix": "minecraft:diamond",
-        "bedrock_armor_id": "armor.custom_diamond",
-        "attachable_file": "attachables/diamond.json"
-      }
-    }
-  }
-}
-```
+Bedrock cần cả font texture (`.png`) và định nghĩa glyph (`.json`). `textures/font/` chứa ảnh, `font/` chứa file cấu hình.
+
+**Hỏi: Làm sao để chạy nhiều pack cùng lúc?**
+
+Viết script batch (`.bat` hoặc `.sh`) lặp lại lệnh `python converter.py` với các tham số khác nhau. Hoặc dùng chế độ dòng lệnh.
+
+**Hỏi: Có hỗ trợ 3D model từ ModelEngine không?**
+
+Phiên bản Python 2.3.0 hỗ trợ cơ bản (parse entity, tạo geometry/animations). Để đầy đủ, cần mở rộng thêm.
 
 ---
 
-## 🖥️ Cách sử dụng với GeyserMC
+## 10. LIÊN HỆ & HỖ TRỢ
 
-### Bước 1: Chuẩn bị GeyserMC
-```bash
-# Cài GeyserMC plugin cho Spigot/Bukkit hoặc standalone
-# Download từ: https://geysermc.org/download
-
-# Cấu trúc thư mục:
-server/
-├── plugins/
-│   ├── Geyser-Spigot.jar
-│   └── Geyser-Spigot/
-│       ├── config.yml
-│       └── packs/     ← Nơi đặt resource pack
-└── ...
-```
-
-### Bước 2: Copy Resource Pack
-```bash
-# Copy toàn bộ thư mục bedrock pack vào:
-cp -r my_converted_pack/ server/plugins/Geyser-Spigot/packs/
-
-# Hoặc trên Windows:
-# Copy thư mục my_converted_pack vào GeyserMC/packs/
-```
-
-### Bước 3: Cấu hình GeyserMC (config.yml)
-```yaml
-remote:
-  address: localhost  # Java server address
-  port: 25565
-
-resource-packs:
-  # Bedrock packs được tự động load từ packs/ folder
-  
-  # Nếu cần xác định cụ thể:
-  packs:
-    - my_converted_pack
-
-  # Bắt buộc load pack (ngăn player bỏ qua)
-  force-resources: true
-```
-
-### Bước 4: Restart Server
-```bash
-# Restart GeyserMC
-/geyser reload
-
-# Hoặc restart toàn bộ server
-```
-
-### Bước 5: Test
-- Connect Bedrock client (Phone, Xbox, Windows 10/11 Edition)
-- Resource pack sẽ tự động download
-- Verify custom items/armor/sounds hoạt động
-
----
-
-## 🐛 Xử lý sự cố
-
-### ❌ "Thư mục không tồn tại"
-```
-❌ Lỗi: Thư mục không tồn tại: /path/to/pack
-❌ Lỗi: Không tìm thấy thư mục 'assets'
-```
-
-**Giải pháp:**
-- Kiểm tra đường dẫn có dấu cách hay ký tự đặc biệt không
-- Đảm bảo Java pack có thư mục `assets/`
-- Thử đường dẫn tuyệt đối thay vì tương đối:
-  ```bash
-  # Sai:
-  python3 converter.py ./my_pack
-  
-  # Đúng:
-  python3 converter.py /Users/username/Downloads/my_pack
-  ```
-
-### ❌ "Thư viện Pillow không được cài đặt"
-```
-⚠️  Thư viện Pillow không được cài đặt. Một số tính năng xử lý ảnh sẽ bị tắt.
-```
-
-**Giải pháp:**
-```bash
-# Cài Pillow
-pip install Pillow
-
-# Hoặc trên macOS:
-pip3 install Pillow
-```
-
-### ❌ Resource pack không load trong GeyserMC
-```
-[GeyserMC] Resource pack failed to load
-```
-
-**Kiểm tra:**
-1. File `manifest.json` có valid không?
-   ```python
-   # Test import JSON
-   import json
-   with open("manifest.json") as f:
-       data = json.load(f)  # Nếu có lỗi SyntaxError, fix JSON
-   ```
-
-2. UUID trong manifest.json có hợp lệ không?
-   - Format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
-   - Phải có 2 UUIDs (header uuid + module uuid)
-
-3. Đường dẫn tệp có đúng không?
-   - Bedrock case-sensitive trên Linux/macOS
-   - Kiểm tra tất cả đường dẫn trong JSON files
-
-4. Đã copy đến thư mục đúng không?
-   ```bash
-   ls -la /path/to/server/plugins/Geyser-Spigot/packs/my_pack/
-   # Phải thấy: manifest.json, textures/, sounds/...
-   ```
-
-### ❌ Custom items không hiển thị
-```
-Custom Model Data không được convert
-```
-
-**Kiểm tra:**
-1. `custom_mappings.json` có chứa items không?
-   ```bash
-   grep "java_cmd" custom_mappings.json
-   ```
-
-2. GeyserMC có đọc file không?
-   - Xem log: `[GeyserMC] Loading custom mappings...`
-
-3. Item texture có tồn tại không?
-   - Verify: `textures/items/[item_name].png`
-
-### ⚠️ Font/Emoji không hiển thị
-```
-Font không được render đúng
-```
-
-**Giải pháp:**
-- Script tạo template cơ bản - có thể cần chỉnh sửa thủ công
-- Glyph coordinates có thể không chính xác
-- Cách fix:
-  1. Mở `font/default.json`
-  2. Điều chỉnh `x`, `y`, `w`, `h` để match vị trí character trên PNG
-  3. Test in-game
-
-### ⚠️ Armor không hiển thị
-```
-Custom armor texture không render
-```
-
-**Kiểm tra:**
-1. Attachable JSON có tồn tại không?
-   - `attachables/[armor_name].json`
-
-2. Geometry ID có đúng không?
-   - Format: `geometry.armor.custom_[name]`
-
-3. Texture path có tồn tại không?
-   - Verify: `textures/models/armor/[name]_layer_1.png`
-
----
-
-## 💡 Tips & Tricks
-
-### Optimization
-1. **Compress textures:**
-   ```bash
-   # Sử dụng ImageMagick để compress PNG
-   mogrify -quality 95 textures/**/*.png
-   ```
-
-2. **Optimize JSON:**
-   ```bash
-   # Minify custom_mappings.json để giảm dung lượng
-   jq -c '.' custom_mappings.json > custom_mappings.min.json
-   ```
-
-### Debugging
-1. **Enable verbose logging:**
-   ```bash
-   # Thêm vào script
-   export DEBUG=1
-   python3 converter.py ...
-   ```
-
-2. **Validate JSON:**
-   ```bash
-   # Kiểm tra syntax JSON
-   python3 -m json.tool manifest.json > /dev/null
-   ```
-
-### Advanced
-- **Batch convert multiple packs:**
-  ```bash
-  for pack in ~/packs/*; do
-    python3 converter.py "$pack" ./bedrock_packs "$(basename $pack)"
-  done
-  ```
-
-- **Automate deployment:**
-  ```bash
-  #!/bin/bash
-  python3 converter.py "$1"
-  cp -r bedrock_packs/* ~/geyser_server/plugins/Geyser-Spigot/packs/
-  echo "Done! Resource pack deployed."
-  ```
-
----
-
-## 📞 Support & Links
-
-- **GeyserMC Official:** https://geysermc.org/
-- **GeyserMC GitHub:** https://github.com/GeyserMC/Geyser
-- **Bedrock Edition Docs:** https://learn.microsoft.com/en-us/minecraft/creator/reference/content/
-- **Minecraft Wiki:** https://minecraft.wiki/
-
----
-
-## 📄 License & Credits
-
-Converter được tạo bởi Claude @ Anthropic  
-Tối ưu cho GeyserMC Plugin
-
----
-
-**Chúc bạn chuyển đổi thành công! 🎮✨**
+- **GitHub Issues:** https://github.com/your-repo/mc-converter-python/issues
+- **Email:** support@example.com
+- **Wiki ItemsAdder:** http://thunder.pikamc.vn:25164/wiki/#itemsadder
