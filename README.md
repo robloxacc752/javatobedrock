@@ -429,7 +429,7 @@ Các feature có thể:
 MIT License - Tự do sử dụng, tuỳ chỉnh, phân phối.
 
 ```
-Copyright (c) 2024 Claude @ Anthropic
+Copyright (c) 2026 LeHoangNam
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software...
@@ -439,7 +439,7 @@ of this software...
 
 ## 🙏 Credits
 
-**Tác giả:** Claude @ Anthropic  
+**Tác giả:** leHoangNam112233  
 **Tối ưu cho:** GeyserMC Plugin  
 **Ngôn ngữ:** Tiếng Việt (Docs & Comments)  
 
@@ -459,7 +459,6 @@ of this software...
 4. **Troubleshooting section** - xử lý lỗi phổ biến
 
 ### Contact
-- 📧 Email: support@example.com
 - 🐛 Issues: GitHub Issues
 - 💬 Discussions: GitHub Discussions
 
