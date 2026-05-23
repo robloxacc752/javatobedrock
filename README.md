@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.4.0-orange)]()
+[![Version](https://img.shields.io/badge/version-2.4.0-green)]()
 
 ---
 
