@@ -3,6 +3,11 @@
 > **Chuyển đổi Java Edition Resource Pack → Bedrock Edition** để sử dụng với **GeyserMC**  
 > Hỗ trợ đầy đủ ItemsAdder, Custom Model Data, 3D Inventory Models, Armor Attachables và Sounds.
 
+
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.0-orange)]()
+
 ---
 
 ## ✨ Tính năng chính
