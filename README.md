@@ -58,15 +58,15 @@ pip install Pillow   # Cần cho xử lý texture (resize, format check)
 
 ```bash
 # Interactive mode (khuyến nghị)
-python minecraft_resourcepack_converter_FIXED.py
+python converter.v2.4.0.py
 
 # Command line mode
-python minecraft_resourcepack_converter_FIXED.py <java_pack_path> [output_path] [pack_name]
+python converter.v2.4.0.py <java_pack_path> [output_path] [pack_name]
 ```
 
 **Ví dụ:**
 ```bash
-python minecraft_resourcepack_converter_FIXED.py "C:\MyPack" "C:\Output" "my_bedrock_pack"
+python converter.v2.4.0.py "C:\MyPack" "C:\Output" "my_bedrock_pack"
 ```
 
 ---
